@@ -13,6 +13,7 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: "aqua",
     padding: "0.5rem",
     margin: "0.3rem auto",
+    display: "grid",
   },
 }));
 
