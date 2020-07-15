@@ -1,4 +1,11 @@
-import { Button, Grid, Paper, Typography } from "@material-ui/core";
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  Grid,
+  Paper,
+  Typography,
+} from "@material-ui/core";
 import AdjustIcon from "@material-ui/icons/Adjust";
 import HighlightOffIcon from "@material-ui/icons/HighlightOff";
 import React, { Fragment, useEffect, useState } from "react";
@@ -16,27 +23,6 @@ function GameContainer(props: any) {
   const [boardState, setBoardState] = useState(squares);
   const [playerOneTurn, setPlayerOneTurn] = useState(true);
   const [gameState, setGameState] = useState("PLAY"); // "PLAY", "P1_WIN", "P2_WIN", "DRAW"
-
-  const handleSquareClick = (rowNum: number, colNum: number) => {
-    let newBoardState = JSON.parse(JSON.stringify(boardState));
-
-    const value = playerOneTurn ? 1 : 2;
-
-    if (newBoardState[rowNum][colNum].state === 0) {
-      newBoardState[rowNum][colNum].state = value;
-    }
-
-    console.log(
-      boardState[rowNum][colNum].state,
-      "=>",
-      newBoardState[rowNum][colNum].state
-    );
-
-    if (gameState === "PLAY" && boardState[rowNum][colNum].state === 0) {
-      setBoardState(newBoardState);
-      setPlayerOneTurn(!playerOneTurn);
-    }
-  };
 
   const statusStyle = (status: string) => {
     const gameStatus: {
@@ -67,15 +53,36 @@ function GameContainer(props: any) {
     return gameStatus[`${status}`];
   };
 
+  const handleSquareClick = (rowNum: number, colNum: number) => {
+    let newBoardState = JSON.parse(JSON.stringify(boardState));
+
+    const value = playerOneTurn ? 1 : 2;
+
+    if (newBoardState[rowNum][colNum].state === 0) {
+      newBoardState[rowNum][colNum].state = value;
+    }
+
+    console.log(
+      boardState[rowNum][colNum].state,
+      "=>",
+      newBoardState[rowNum][colNum].state
+    );
+
+    if (gameState === "PLAY" && boardState[rowNum][colNum].state === 0) {
+      setBoardState(newBoardState);
+      setPlayerOneTurn(!playerOneTurn);
+    }
+  };
+
   const handleReset = () => {
     setBoardState(squares);
     setPlayerOneTurn(true);
     setGameState("PLAY");
   };
 
-  const checkSquares = (squareState: { state: number }[][]) => {
-    console.log("CHECK!");
-
+  const gridTraverser = (
+    squareState: { state: number }[][]
+  ): { done: boolean; stateString: string } => {
     let done: boolean = true;
 
     let stateString: string = "";
@@ -101,6 +108,24 @@ function GameContainer(props: any) {
       return null;
     });
 
+    return { done, stateString };
+  };
+
+  const aiMove = (
+    squareState: { state: number }[][]
+  ): { row: number; col: number } => {
+    const { stateString } = gridTraverser(squareState);
+
+    console.log("MOVE!", stateString);
+
+    return { row: 0, col: 0 };
+  };
+
+  const checkSquares = (squareState: { state: number }[][]) => {
+    console.log("CHECK!");
+
+    const { done, stateString } = gridTraverser(squareState);
+
     const p1win: boolean = /1{3}-.{3}-.{3}|.{3}-.{3}-1{3}|.{3}-1{3}-.{3}|1..-.1.-..1|.1.-.1.-.1.|..1-.1.-1..|1..-1..-1..|..1-..1-..1/.test(
       stateString
     );
@@ -113,13 +138,9 @@ function GameContainer(props: any) {
 
     if (p1win) {
       setGameState("P1_WIN");
-    }
-
-    if (p2win) {
+    } else if (p2win) {
       setGameState("P2_WIN");
-    }
-
-    if (done) {
+    } else if (done) {
       setGameState("DRAW");
     }
   };
@@ -182,6 +203,7 @@ function GameContainer(props: any) {
 
   useEffect(() => {
     checkSquares(boardState);
+    aiMove(boardState);
   }, [boardState]);
 
   return (
@@ -189,7 +211,7 @@ function GameContainer(props: any) {
       <ButtonArray source={squares} />
       <div>
         <Grid container>
-          <Grid item xs={6}>
+          <Grid item xs={12}>
             <div
               style={{
                 backgroundColor: playerOneTurn ? "white" : "black",
@@ -202,25 +224,31 @@ function GameContainer(props: any) {
               <Typography variant="h5">Player {playerOneTurn ? 1 : 2}</Typography>
             </div>
           </Grid>
-          <Grid item xs={6}>
-            <div
-              style={{
-                backgroundColor: statusStyle(gameState).backgroundColor,
-                color: statusStyle(gameState).color,
-                margin: "1rem",
-                textAlign: "center",
-              }}
-            >
-              <Typography variant="h5">{statusStyle(gameState).text}</Typography>
-            </div>
-          </Grid>
-          <Grid item xs={12}>
-            <Button variant="contained" color="primary" onClick={handleReset}>
-              Reset
-            </Button>
-          </Grid>
         </Grid>
       </div>
+      <Dialog
+        open={gameState !== "PLAY"}
+        onClose={handleReset}
+        style={{ display: gameState !== "PLAY" ? "block" : "none" }}
+      >
+        <DialogContent
+          style={{
+            backgroundColor: statusStyle(gameState).backgroundColor,
+            color: statusStyle(gameState).color,
+            textAlign: "center",
+          }}
+        >
+          <Typography variant="h1" style={{ textAlign: "center" }}>
+            {statusStyle(gameState).text}
+          </Typography>
+          <Button
+            onClick={handleReset}
+            style={{ margin: "1rem", color: statusStyle(gameState).color }}
+          >
+            Restart
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
